@@ -1,25 +1,39 @@
 public class RBTreeNode {
     public enum NodeColor {
-        RED,
-        BLACK
+        RED, BLACK
     }
 
     private int key;
 
     private int value;
 
+    private RBTreeNode parent;
+
     private RBTreeNode leftChild;
 
     private RBTreeNode rightChild;
 
-    private NodeColor color;
+    private NodeColor nodeColor;
 
-    public RBTreeNode() {
+    public RBTreeNode(RBTreeNode rbTreeNode) {
+        this.key = rbTreeNode.getKey();
+        this.value = rbTreeNode.getValue();
+        this.parent = rbTreeNode.getParent();
+        this.leftChild = rbTreeNode.getLeftChild();
+        this.rightChild = rbTreeNode.getRightChild();
+        this.nodeColor = rbTreeNode.getNodeColor();
     }
 
     public RBTreeNode(int key, int value) {
         this.key = key;
         this.value = value;
+        this.nodeColor = NodeColor.RED;
+    }
+
+    public RBTreeNode(int key, int value, NodeColor nodeColor) {
+        this.key = key;
+        this.value = value;
+        this.nodeColor = nodeColor;
     }
 
     public int getKey() {
@@ -38,6 +52,14 @@ public class RBTreeNode {
         this.value = value;
     }
 
+    public RBTreeNode getParent() {
+        return parent;
+    }
+
+    public void setParent(RBTreeNode parent) {
+        this.parent = parent;
+    }
+
     public RBTreeNode getLeftChild() {
         return this.leftChild;
     }
@@ -54,11 +76,16 @@ public class RBTreeNode {
         this.rightChild = rightChild;
     }
 
-    public NodeColor getColor() {
-        return this.color;
+    public NodeColor getNodeColor() {
+        return this.nodeColor;
     }
 
-    public void setColor(NodeColor color) {
-        this.color = color;
+    public void setNodeColor(NodeColor nodeColor) {
+        this.nodeColor = nodeColor;
+    }
+
+    public void copyNodeData(RBTreeNode rbTreeNode) {
+        this.key = rbTreeNode.getKey();
+        this.value = rbTreeNode.getValue();
     }
 }
