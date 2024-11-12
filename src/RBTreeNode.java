@@ -3,9 +3,9 @@ public class RBTreeNode {
         RED, BLACK
     }
 
-    private int key;
+    private Integer key;
 
-    private int value;
+    private Integer value;
 
     private RBTreeNode parent;
 
@@ -87,5 +87,14 @@ public class RBTreeNode {
     public void copyNodeData(RBTreeNode rbTreeNode) {
         this.key = rbTreeNode.getKey();
         this.value = rbTreeNode.getValue();
+    }
+
+    public void empty() {
+        this.key = null;
+        this.value = null;
+        this.parent = null;
+        this.leftChild = null;
+        this.rightChild = null;
+        this.nodeColor = null;
     }
 }

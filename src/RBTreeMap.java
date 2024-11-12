@@ -1,11 +1,14 @@
 import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
+import java.util.Stack;
 
 public class RBTreeMap implements Map<Integer, Integer> {
     private RBTreeNode rootNode;
@@ -24,7 +27,7 @@ public class RBTreeMap implements Map<Integer, Integer> {
 
     @Override
     public int size() {
-        return 0;
+        return this.size;
     }
 
     @Override
@@ -45,7 +48,7 @@ public class RBTreeMap implements Map<Integer, Integer> {
 
     @Override
     public Integer get(Object key) {
-        logger.info("Checking for key: " + key);
+        logger.info("Querying for value with key: " + key);
         return this.searchKey(this.rootNode, (Integer) key);
     }
 
@@ -54,7 +57,7 @@ public class RBTreeMap implements Map<Integer, Integer> {
         assert Objects.nonNull(key) : "Key should not be null";
         assert Objects.nonNull(value) : "Value should not be null";
 
-        insertKVPair(key, value, this.rootNode);
+        this.insertKVPair(key, value, this.rootNode);
         this.size++;
         return value;
     }
@@ -62,7 +65,13 @@ public class RBTreeMap implements Map<Integer, Integer> {
     @Override
     public Integer remove(Object key) {
         assert Objects.nonNull(key) : "Key should not be null";
-        return 0;
+
+        Stack<RBTreeNode> nodesStack = new Stack<>();
+        Integer value = this.deleteKVPair((Integer) key, this.rootNode, nodesStack);
+        if (Objects.nonNull(value)) {
+            this.size--;
+        }
+        return value;
     }
 
     @Override
@@ -81,12 +90,16 @@ public class RBTreeMap implements Map<Integer, Integer> {
 
     @Override
     public Set<Integer> keySet() {
-        return Set.of();
+        Set<Integer> keySet = new HashSet<>();
+        this.getKeyValues(this.rootNode, keySet, true);
+        return keySet;
     }
 
     @Override
     public Collection<Integer> values() {
-        return List.of();
+        List<Integer> valuesList = new ArrayList<>();
+        this.getKeyValues(this.rootNode, valuesList, false);
+        return valuesList;
     }
 
     @Override
@@ -193,67 +206,35 @@ public class RBTreeMap implements Map<Integer, Integer> {
         }
     }
 
-    private void balanceRBTree(RBTreeNode parentNode, RBTreeNode treeNode, RBTreeNode siblingNode, NodeDirection nodeDirection, boolean isXXInsertion) {
-        if (Objects.nonNull(siblingNode) && siblingNode.getNodeColor() == RBTreeNode.NodeColor.RED) {
-            this.XYrInsertion(treeNode, siblingNode, parentNode);
-        } else {
-            if (isXXInsertion) {
-                this.XXbInsertion(treeNode, parentNode, nodeDirection);
-            } else {
-                this.XYbInsertion(treeNode, parentNode, nodeDirection);
+    private Integer deleteKVPair(int key, RBTreeNode treeNode, Stack<RBTreeNode> nodesStack) {
+        while (Objects.nonNull(treeNode) && key != treeNode.getKey()) {
+            if (key < treeNode.getKey()) {
+                nodesStack.add(treeNode);
+                treeNode = treeNode.getLeftChild();
+            } else if (key > treeNode.getKey()) {
+                nodesStack.add(treeNode);
+                treeNode = treeNode.getRightChild();
             }
         }
-    }
 
-    private void XYrInsertion(RBTreeNode treeNode, RBTreeNode siblingNode, RBTreeNode parentNode) {
-        if (Objects.isNull(parentNode.getParent())) {
-            parentNode.setNodeColor(RBTreeNode.NodeColor.BLACK);
-        } else {
-            parentNode.setNodeColor(RBTreeNode.NodeColor.RED);
-        }
-        treeNode.setNodeColor(RBTreeNode.NodeColor.BLACK);
-        siblingNode.setNodeColor(RBTreeNode.NodeColor.BLACK);
-    }
-
-    private void XXbInsertion(RBTreeNode treeNode, RBTreeNode parentNode, NodeDirection xNodeDirection) {
-        RBTreeNode swapNode = new RBTreeNode(parentNode);
-        swapNode.setNodeColor(RBTreeNode.NodeColor.RED);
-
-        parentNode.copyNodeData(treeNode);
-        if (xNodeDirection == NodeDirection.LEFT) {
-            this.swapRBTreeNodes(parentNode, treeNode.getLeftChild(), NodeDirection.LEFT);
-            this.swapRBTreeNodes(parentNode, swapNode, NodeDirection.RIGHT);
-            this.swapRBTreeNodes(swapNode, treeNode.getRightChild(), NodeDirection.LEFT);
-        } else {
-            this.swapRBTreeNodes(parentNode, treeNode.getRightChild(), NodeDirection.RIGHT);
-            this.swapRBTreeNodes(parentNode, swapNode, NodeDirection.LEFT);
-            this.swapRBTreeNodes(swapNode, treeNode.getLeftChild(), NodeDirection.RIGHT);
+        if (Objects.isNull(treeNode)) {
+            return null;
         }
 
-        if (Objects.isNull(treeNode.getParent())) {
-            treeNode.setNodeColor(RBTreeNode.NodeColor.BLACK);
-            this.rootNode = treeNode;
+        int value = treeNode.getValue();
+        if (Objects.nonNull(treeNode.getLeftChild()) && Objects.nonNull(treeNode.getRightChild())) {
+            nodesStack.add(treeNode);
+            RBTreeNode itrTreeNode = treeNode.getLeftChild();
+            while (Objects.nonNull(itrTreeNode.getRightChild())) {
+                nodesStack.add(itrTreeNode);
+                itrTreeNode = itrTreeNode.getRightChild();
+            }
+            treeNode.copyNodeData(itrTreeNode);
+            treeNode = itrTreeNode;
         }
-    }
+        this.deleteNodeAndBalanceRBTree(treeNode, nodesStack);
 
-    private void XYbInsertion(RBTreeNode treeNode, RBTreeNode parentNode, NodeDirection xNodeDirection) {
-        RBTreeNode swapNode = new RBTreeNode(parentNode);
-        swapNode.setNodeColor(RBTreeNode.NodeColor.RED);
-
-        RBTreeNode childNode;
-        if (xNodeDirection == NodeDirection.RIGHT) {
-            childNode = treeNode.getRightChild();
-            parentNode.copyNodeData(childNode);
-            this.swapRBTreeNodes(parentNode, swapNode, NodeDirection.RIGHT);
-            this.swapRBTreeNodes(swapNode, childNode.getRightChild(), NodeDirection.LEFT);
-            this.swapRBTreeNodes(treeNode, childNode.getLeftChild(), NodeDirection.RIGHT);
-        } else {
-            childNode = treeNode.getLeftChild();
-            parentNode.copyNodeData(childNode);
-            this.swapRBTreeNodes(parentNode, swapNode, NodeDirection.LEFT);
-            this.swapRBTreeNodes(swapNode, childNode.getLeftChild(), NodeDirection.RIGHT);
-            this.swapRBTreeNodes(treeNode, childNode.getRightChild(), NodeDirection.LEFT);
-        }
+        return value;
     }
 
     private void clearAllNodes(RBTreeNode rbTreeNode) {
@@ -267,7 +248,108 @@ public class RBTreeMap implements Map<Integer, Integer> {
         rbTreeNode.setRightChild(null);
     }
 
-    private void swapRBTreeNodes(RBTreeNode parentNode, RBTreeNode childNode, NodeDirection childNodeDirection) {
+    private void getKeyValues(RBTreeNode treeNode, Collection<Integer> collection, boolean insertKeys) {
+        if (Objects.isNull(treeNode)) {
+            return;
+        }
+        collection.add((insertKeys) ? treeNode.getKey() : treeNode.getValue());
+        getKeyValues(treeNode.getLeftChild(), collection, insertKeys);
+        getKeyValues(treeNode.getRightChild(), collection, insertKeys);
+    }
+
+
+    private void balanceRBTree(RBTreeNode parentNode, RBTreeNode treeNode, RBTreeNode siblingNode, NodeDirection nodeDirection, boolean isXXInsertion) {
+        if (Objects.nonNull(siblingNode) && siblingNode.getNodeColor() == RBTreeNode.NodeColor.RED) {
+            this.XYrInsertion(parentNode, treeNode, siblingNode);
+        } else {
+            if (isXXInsertion) {
+                this.XXbInsertion(parentNode, treeNode, nodeDirection);
+            } else {
+                this.XYbInsertion(parentNode, treeNode, nodeDirection);
+            }
+        }
+    }
+
+    private void XYrInsertion(RBTreeNode parentNode, RBTreeNode treeNode, RBTreeNode siblingNode) {
+        if (Objects.isNull(parentNode.getParent())) {
+            parentNode.setNodeColor(RBTreeNode.NodeColor.BLACK);
+        } else {
+            parentNode.setNodeColor(RBTreeNode.NodeColor.RED);
+        }
+        treeNode.setNodeColor(RBTreeNode.NodeColor.BLACK);
+        siblingNode.setNodeColor(RBTreeNode.NodeColor.BLACK);
+    }
+
+    private void XXbInsertion(RBTreeNode parentNode, RBTreeNode treeNode, NodeDirection xNodeDirection) {
+        RBTreeNode swapNode = new RBTreeNode(parentNode);
+        swapNode.setNodeColor(RBTreeNode.NodeColor.RED);
+
+        parentNode.copyNodeData(treeNode);
+        if (xNodeDirection == NodeDirection.LEFT) {
+            this.addRBTreeChildNode(parentNode, treeNode.getLeftChild(), NodeDirection.LEFT);
+            this.addRBTreeChildNode(parentNode, swapNode, NodeDirection.RIGHT);
+            this.addRBTreeChildNode(swapNode, treeNode.getRightChild(), NodeDirection.LEFT);
+        } else {
+            this.addRBTreeChildNode(parentNode, treeNode.getRightChild(), NodeDirection.RIGHT);
+            this.addRBTreeChildNode(parentNode, swapNode, NodeDirection.LEFT);
+            this.addRBTreeChildNode(swapNode, treeNode.getLeftChild(), NodeDirection.RIGHT);
+        }
+
+        if (Objects.isNull(treeNode.getParent())) {
+            treeNode.setNodeColor(RBTreeNode.NodeColor.BLACK);
+            this.rootNode = treeNode;
+        }
+    }
+
+    private void XYbInsertion(RBTreeNode parentNode, RBTreeNode treeNode, NodeDirection xNodeDirection) {
+        RBTreeNode swapNode = new RBTreeNode(parentNode);
+        swapNode.setNodeColor(RBTreeNode.NodeColor.RED);
+
+        RBTreeNode childNode;
+        if (xNodeDirection == NodeDirection.RIGHT) {
+            childNode = treeNode.getRightChild();
+            parentNode.copyNodeData(childNode);
+            this.addRBTreeChildNode(parentNode, swapNode, NodeDirection.RIGHT);
+            this.addRBTreeChildNode(swapNode, childNode.getRightChild(), NodeDirection.LEFT);
+            this.addRBTreeChildNode(treeNode, childNode.getLeftChild(), NodeDirection.RIGHT);
+        } else {
+            childNode = treeNode.getLeftChild();
+            parentNode.copyNodeData(childNode);
+            this.addRBTreeChildNode(parentNode, swapNode, NodeDirection.LEFT);
+            this.addRBTreeChildNode(swapNode, childNode.getLeftChild(), NodeDirection.RIGHT);
+            this.addRBTreeChildNode(treeNode, childNode.getRightChild(), NodeDirection.LEFT);
+        }
+    }
+
+    private void deleteNodeAndBalanceRBTree(RBTreeNode treeNode, Stack<RBTreeNode> nodesStack) {
+        if (Objects.isNull(treeNode.getRightChild()) && Objects.isNull(treeNode.getLeftChild())) {
+            if (Objects.isNull(treeNode.getParent())) {
+                this.rootNode = null;
+                return;
+            }
+            this.replaceRBTreeChildNode(treeNode.getParent(), treeNode, null);
+        }
+        else if (Objects.nonNull(treeNode.getLeftChild())) {
+            this.replaceRBTreeChildNode(treeNode.getParent(), treeNode, treeNode.getLeftChild());
+        } else if (Objects.nonNull(treeNode.getRightChild())) {
+            this.replaceRBTreeChildNode(treeNode.getParent(), treeNode, treeNode.getRightChild());
+        }
+
+        if (treeNode.getNodeColor() == RBTreeNode.NodeColor.RED) {
+            treeNode.empty();
+            return;
+        }
+    }
+
+    private void replaceRBTreeChildNode(RBTreeNode parentNode, RBTreeNode treeNode, RBTreeNode newNode) {
+        if (parentNode.getLeftChild() == treeNode) {
+            this.addRBTreeChildNode(parentNode, newNode, NodeDirection.LEFT);
+        } else if (parentNode.getRightChild() == treeNode) {
+            this.addRBTreeChildNode(parentNode, newNode, NodeDirection.RIGHT);
+        }
+    }
+
+    private void addRBTreeChildNode(RBTreeNode parentNode, RBTreeNode childNode, NodeDirection childNodeDirection) {
         if (childNodeDirection == NodeDirection.LEFT) {
             parentNode.setLeftChild(childNode);
         } else if (childNodeDirection == NodeDirection.RIGHT) {
