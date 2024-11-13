@@ -16,7 +16,11 @@ public class User implements Comparable<User> {
     }
 
     public int getUserId() {
-        return userId;
+        return this.userId;
+    }
+
+    public long getTimestamp() {
+        return this.timestamp;
     }
 
     @Override
@@ -34,9 +38,9 @@ public class User implements Comparable<User> {
     }
 
     private int compare(User user1, User user2) {
-        if(user1.userPriority == user2.userPriority) {
+        if (user1.userPriority == user2.userPriority) {
             return Long.compare(user1.timestamp, user2.timestamp);
         }
-        return (user1.userPriority > user2.userPriority)? -1 : 1;
+        return (user1.userPriority > user2.userPriority) ? -1 : 1;
     }
 }

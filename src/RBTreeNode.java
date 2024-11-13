@@ -15,13 +15,7 @@ public class RBTreeNode {
 
     private NodeColor nodeColor;
 
-    public RBTreeNode(RBTreeNode rbTreeNode) {
-        this.key = rbTreeNode.getKey();
-        this.value = rbTreeNode.getValue();
-        this.parent = rbTreeNode.getParent();
-        this.leftChild = rbTreeNode.getLeftChild();
-        this.rightChild = rbTreeNode.getRightChild();
-        this.nodeColor = rbTreeNode.getNodeColor();
+    public RBTreeNode() {
     }
 
     public RBTreeNode(int key, int value) {

@@ -19,10 +19,10 @@ public class InputActionsHandler {
     private static final String INVALID_INPUT = "Invalid input. Please provide a valid number of seats.";
 
     public InputActionsHandler() {
-        availableSeats = 0;
-        usersWaitList = new BinaryMinHeap<>(WAITLIST_SIZE);
-        availableSeatsList = new BinaryMinHeap<>(WAITLIST_SIZE);
-        userReservationMap = new RBTreeMap();
+        this.availableSeats = 0;
+        this.usersWaitList = new BinaryMinHeap<>(WAITLIST_SIZE);
+        this.availableSeatsList = new BinaryMinHeap<>(WAITLIST_SIZE);
+        this.userReservationMap = new RBTreeMap();
     }
 
     public String initialize(int seatCount) {
@@ -30,28 +30,46 @@ public class InputActionsHandler {
             return INVALID_INPUT;
         }
         for (int seatNumber = 1; seatNumber <= seatCount; seatNumber++) {
-            availableSeatsList.insert(seatNumber);
+            this.availableSeatsList.insert(seatNumber);
         }
-        availableSeats += seatCount;
+        this.availableSeats += seatCount;
         return String.format("%d Seats are made available for reservation", seatCount);
     }
 
     public String available() {
-        return String.format("Total Seats Available : %d, Waitlist : %d", availableSeatsList.size(), usersWaitList.size());
+        return String.format("Total Seats Available : %d, Waitlist : %d", this.availableSeatsList.size(), this.usersWaitList.size());
     }
 
     public String reserve(Integer userId, Integer userPriority) {
-        if (availableSeatsList.isEmpty()) {
-            usersWaitList.insert(new User(userId, userPriority, System.nanoTime()));
+        if (this.availableSeatsList.isEmpty()) {
+            this.usersWaitList.insert(new User(userId, userPriority, System.nanoTime()));
             return String.format("User %d is added to the waiting list", userId);
         }
-        int seatId = availableSeatsList.extractMin();
-        userReservationMap.put(userId, seatId);
+        int seatId = this.availableSeatsList.extractMin();
+        this.userReservationMap.put(userId, seatId);
         return String.format("User %d reserved seat %d", userId, seatId);
     }
 
     public List<String> cancel(Integer seatId, Integer userId) {
-        return List.of("");
+        List<String> responses = new ArrayList<>();
+        Integer cancelledSeatId = this.userReservationMap.remove(userId);
+
+        if (Objects.isNull(cancelledSeatId)) {
+            responses.add(String.format("User %d has no reservation to cancel", userId));
+        } else if (!Objects.equals(cancelledSeatId, seatId)) {
+            responses.add(String.format("User %d has no reservation for seat %d to cancel", userId, seatId));
+        } else {
+            responses.add(String.format("User %d canceled their reservation", userId));
+            if (!this.usersWaitList.isEmpty()) {
+                User user = this.usersWaitList.extractMin();
+                if (Objects.nonNull(this.userReservationMap.putIfAbsent(user.getUserId(), seatId))) {
+                    responses.add(String.format("User %d reserved seat %d", user.getUserId(), seatId));
+                }
+            } else {
+                this.availableSeatsList.insert(seatId);
+            }
+        }
+        return responses;
     }
 
     public String exitWaitlist(int userId) {
@@ -61,27 +79,36 @@ public class InputActionsHandler {
         return String.format("User %d is not in waitlist", userId);
     }
 
+    public String updatePriority(int userId, int userPriority) {
+        Map.Entry<Integer, User> userEntry = this.usersWaitList.getElementAndIndex(new User(userId));
+        if (Objects.isNull(userEntry)) {
+            return String.format("User %d priority is not updated", userId);
+
+        }
+        this.usersWaitList.updateElement(userEntry.getKey(), new User(userId, userPriority, userEntry.getValue().getTimestamp()));
+        return String.format("User %d priority has been updated to %d", userId, userPriority);
+    }
+
     public List<String> addSeats(int seatCount) {
         if (seatCount < 0 || seatCount > WAITLIST_SIZE) {
             return List.of(INVALID_INPUT);
         }
 
         int seatsAdded = 0;
-
         List<String> outputValues = new ArrayList<>();
-        for (int seatNumber = availableSeats + 1; seatNumber <= availableSeats + seatCount; seatNumber++) {
+        for (int seatNumber = this.availableSeats + 1; seatNumber <= this.availableSeats + seatCount; seatNumber++) {
             if (!this.availableSeatsList.insert(seatNumber)) {
                 break;
             }
             seatsAdded++;
         }
-        availableSeats += seatsAdded;
+        this.availableSeats += seatsAdded;
         outputValues.add(String.format("Additional %d Seats are made available for reservation", seatsAdded));
 
-        while (!usersWaitList.isEmpty() && !availableSeatsList.isEmpty()) {
-            int seatId = availableSeatsList.extractMin();
-            Integer userId = usersWaitList.extractMin().getUserId();
-            userReservationMap.put(userId, seatId);
+        while (!this.usersWaitList.isEmpty() && !this.availableSeatsList.isEmpty()) {
+            int seatId = this.availableSeatsList.extractMin();
+            Integer userId = this.usersWaitList.extractMin().getUserId();
+            this.userReservationMap.put(userId, seatId);
             outputValues.add(String.format("User %d reserved seat %d", userId, seatId));
         }
 
@@ -89,10 +116,10 @@ public class InputActionsHandler {
     }
 
     public List<String> printReservations() {
-        Set<Map.Entry<Integer, Integer>> reservationDetailsSet = userReservationMap.entrySet();
+        Set<Map.Entry<Integer, Integer>> reservationDetailsSet = this.userReservationMap.entrySet();
         return reservationDetailsSet.stream()
-                .map(setEntry -> String.format("[%d, %d]", setEntry.getValue(), setEntry.getKey()))
-                .collect(Collectors.toList());
+                .sorted(Map.Entry.comparingByValue())
+                .map(setEntry -> String.format("Seat %d, User %d", setEntry.getValue(), setEntry.getKey())).collect(Collectors.toList());
     }
 
     public String quit() {

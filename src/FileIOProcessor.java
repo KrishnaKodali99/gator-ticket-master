@@ -18,6 +18,7 @@ public class FileIOProcessor {
     private static final String RESERVE_REGEX = "Reserve\\((\\d+),\\s*(\\d+)\\)\\s*$";
     private static final String CANCEL_REGEX = "Cancel\\((\\d+),\\s*(\\d+)\\)\\s*$";
     private static final String EXIT_WAITLIST_REGEX = "ExitWaitlist\\((\\d+)\\)\\s*$";
+    private static final String UPDATE_PRIORITY_REGEX = "UpdatePriority\\((\\d+),\\s*(\\d+)\\)\\s*$";
     private static final String ADD_SEATS_REGEX = "AddSeats\\((\\d+)\\)\\s*$";
     private static final String PRINT_RESERVATIONS_REGEX = "PrintReservations\\(\\)\\s*$";
     private static final String QUIT_REGEX = "Quit\\(\\)\\s*$";
@@ -102,6 +103,13 @@ public class FileIOProcessor {
             if (matcher.find()) {
                 int userId = Integer.parseInt(matcher.group(1));
                 responseStrings.add(inputActionsHandler.exitWaitlist(userId));
+            }
+        } else if (line.matches(UPDATE_PRIORITY_REGEX)){
+            Matcher matcher = this.getMatcher(UPDATE_PRIORITY_REGEX, line);
+            if (matcher.find()) {
+                int userId = Integer.parseInt(matcher.group(1));
+                int userPriority = Integer.parseInt(matcher.group(2));
+                responseStrings.add(inputActionsHandler.updatePriority(userId, userPriority));
             }
         } else if (line.matches(ADD_SEATS_REGEX)) {
             Matcher matcher = this.getMatcher(ADD_SEATS_REGEX, line);

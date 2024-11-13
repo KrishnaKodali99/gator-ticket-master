@@ -1,3 +1,4 @@
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 public class BinaryMinHeap<K extends Comparable<K>> {
@@ -84,6 +85,39 @@ public class BinaryMinHeap<K extends Comparable<K>> {
     }
 
     /**
+     * Retrieves a map entry containing the element and its index in the collection.
+     *
+     * @param element to search for in the collection, typically using `equals()`.
+     * @return A Map.Entry containing index of the element(key) and the element from the heap itself(value) if found, else null.
+     */
+    public Map.Entry<Integer, K> getElementAndIndex(K element) {
+        for (int index = 0; index < this.currentSize; index++) {
+            if (element.equals(this.heapArray[index])) {
+                return Map.entry(index, this.heapArray[index]);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Updates the element at the specified index in the collection.
+     *
+     * @param index of the element to update in the collection.
+     * @param element to assign at the specified index.
+     */
+    public void updateElement(Integer index, K element) {
+        if (index >= 0 && index < this.currentSize) {
+            this.heapArray[index] = element;
+            int parentIndex = (index - 1) / 2;
+            if (this.heapArray[index].compareTo(this.heapArray[parentIndex]) > 0) {
+                this.heapifyDown(index);
+            } else {
+                this.heapifyUp(index);
+            }
+        }
+    }
+
+    /**
      * Returns the minimum value (root) of the Binary Min Heap without removing it.
      *
      * @return The minimum value (root) of the heap, or {@code null} if the heap is empty.
@@ -103,7 +137,6 @@ public class BinaryMinHeap<K extends Comparable<K>> {
     }
 
     /**
-     *
      * @return `true` if the heap is empty, `false` otherwise.
      */
     public boolean isEmpty() {

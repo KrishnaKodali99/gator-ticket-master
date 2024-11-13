@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
-import java.util.Stack;
 
 public class RBTreeMap implements Map<Integer, Integer> {
     private RBTreeNode rootNode;
@@ -37,7 +36,8 @@ public class RBTreeMap implements Map<Integer, Integer> {
 
     @Override
     public boolean containsKey(Object key) {
-        logger.info("Checking for key: " + key);
+        assert Objects.nonNull(key) : "Key should not be null";
+
         return Objects.nonNull(this.searchKey(this.rootNode, (Integer) key));
     }
 
@@ -66,6 +66,10 @@ public class RBTreeMap implements Map<Integer, Integer> {
     @Override
     public Integer remove(Object key) {
         assert Objects.nonNull(key) : "Key should not be null";
+
+        if (this.size == 0) {
+            return null;
+        }
 
         Integer value = this.deleteKVPair((Integer) key, this.rootNode);
         if (Objects.nonNull(value)) {
@@ -104,7 +108,9 @@ public class RBTreeMap implements Map<Integer, Integer> {
 
     @Override
     public Set<Entry<Integer, Integer>> entrySet() {
-        return Set.of();
+        Set<Entry<Integer, Integer>> set = new HashSet<>();
+        this.addEntriesInOrder(this.rootNode, set);
+        return set;
     }
 
     @Override
@@ -202,8 +208,8 @@ public class RBTreeMap implements Map<Integer, Integer> {
      * Deletes a key-value pair from the Red-Black tree while ensuring the tree remains balanced according to Re-Black tree properties
      * The method uses a stack to track visited nodes, instead of recursion, for rebalancing if needed.
      *
-     * @param key        The key of the node to be deleted.
-     * @param treeNode   The root node of the tree or subtree where the deletion is to take place.
+     * @param key      The key of the node to be deleted.
+     * @param treeNode The root node of the tree or subtree where the deletion is to take place.
      * @return The value of the deleted node, or null if the node was not found.
      */
     private Integer deleteKVPair(int key, RBTreeNode treeNode) {
@@ -260,6 +266,16 @@ public class RBTreeMap implements Map<Integer, Integer> {
         getKeyValues(treeNode.getRightChild(), collection, insertKeys);
     }
 
+    private void addEntriesInOrder(RBTreeNode treeNode, Set<Entry<Integer, Integer>> set) {
+        if (Objects.isNull(treeNode)) {
+            return;
+        }
+        addEntriesInOrder(treeNode.getLeftChild(), set);
+        treeNode.getKey();
+        set.add(Map.entry(treeNode.getKey(), treeNode.getValue()));
+        addEntriesInOrder(treeNode.getRightChild(), set);
+    }
+
     /**
      * This method adjusts the tree to maintain Red-Black properties, by balancing the Red-Black Tree after an insertion.
      *
@@ -312,6 +328,7 @@ public class RBTreeMap implements Map<Integer, Integer> {
 
     private void balanceRBTreePostDelete(RBTreeNode treeNode) {
         RBTreeNode.NodeColor deletedNodeColor = treeNode.getNodeColor();
+        boolean isExternalNode = false;
 
         // Check if the node is a 0-degree node or a 1-degree node, and delete accordingly.
         if (Objects.isNull(treeNode.getRightChild()) && Objects.isNull(treeNode.getLeftChild())) {
@@ -319,7 +336,8 @@ public class RBTreeMap implements Map<Integer, Integer> {
                 this.rootNode = null;
                 return;
             }
-            treeNode = this.replaceRBTreeChildNode(treeNode.getParent(), treeNode, null);
+            treeNode = this.replaceRBTreeChildNode(treeNode.getParent(), treeNode, new RBTreeNode());
+            isExternalNode = true;
         } else if (Objects.nonNull(treeNode.getLeftChild())) {
             treeNode = this.replaceRBTreeChildNode(treeNode.getParent(), treeNode, treeNode.getLeftChild());
         } else if (Objects.nonNull(treeNode.getRightChild())) {
@@ -328,20 +346,23 @@ public class RBTreeMap implements Map<Integer, Integer> {
 
         // No rebalancing needed if the following conditions are met post-deletion.
         if (deletedNodeColor == RBTreeNode.NodeColor.RED) {
+            this.replaceRBTreeChildNode(treeNode.getParent(), treeNode, null);
             return;
-        } else if (Objects.nonNull(treeNode) && treeNode.getNodeColor() == RBTreeNode.NodeColor.RED) {
-            treeNode.setNodeColor(RBTreeNode.NodeColor.BLACK);
-            return;
-        } else if (Objects.nonNull(treeNode) && Objects.isNull(treeNode.getParent())) {
+        } else if (Objects.nonNull(treeNode) && (treeNode.getNodeColor() == RBTreeNode.NodeColor.RED || Objects.isNull(treeNode.getParent()))) {
             treeNode.setNodeColor(RBTreeNode.NodeColor.BLACK);
             return;
         }
 
         RBTreeNode siblingNode;
         NodeDirection nodeDirection = null;
-        while (Objects.nonNull(treeNode)) {
-            siblingNode = null;
+        while (isExternalNode || Objects.nonNull(treeNode)) {
             RBTreeNode parentNode = treeNode.getParent();
+            siblingNode = null;
+
+            //If root node, return as entire tree is deficient
+            if (Objects.isNull(parentNode)) {
+                return;
+            }
 
             // Determine whether the node is deleted from the left or right subtree.
             if (parentNode.getLeftChild() == treeNode) {
@@ -350,6 +371,17 @@ public class RBTreeMap implements Map<Integer, Integer> {
             } else if (parentNode.getRightChild() == treeNode) {
                 nodeDirection = NodeDirection.RIGHT;
                 siblingNode = parentNode.getLeftChild();
+            }
+
+            // Remove the existing root of the subtree if it's an external node.
+            if (isExternalNode) {
+                if (nodeDirection == NodeDirection.LEFT) {
+                    parentNode.setLeftChild(null);
+                } else {
+                    parentNode.setRightChild(null);
+                }
+                treeNode.empty();
+                isExternalNode = false;
             }
 
             // Sibling node must exist; if it does not, stop the deletion process as there is an issue with the Red-Black tree structure.
@@ -370,17 +402,13 @@ public class RBTreeMap implements Map<Integer, Integer> {
                     siblingNode.setNodeColor(RBTreeNode.NodeColor.RED);
                     boolean continueLoop = this.Xb0Deletion(parentNode, siblingNode);
                     if (continueLoop) {
-                        treeNode =  treeNode.getParent();
+                        treeNode = treeNode.getParent();
                         continue;
                     }
-                    return;
-                } else if (siblingNodeRedEdges == 1) {
-                    this.Xb1Deletion(parentNode, siblingNode, nodeDirection);
-                    return;
                 } else {
-                    this.Xb2Deletion(parentNode, siblingNode, nodeDirection);
-                    return;
+                    this.XbnDeletion(parentNode, siblingNode, nodeDirection, siblingNodeRedEdges == 2);
                 }
+                return;
             } else if (siblingNode.getNodeColor() == RBTreeNode.NodeColor.RED) {
                 RBTreeNode siblingChildNode = (nodeDirection == NodeDirection.LEFT) ? siblingNode.getLeftChild() : siblingNode.getRightChild();
 
@@ -394,7 +422,7 @@ public class RBTreeMap implements Map<Integer, Integer> {
                 if (siblingChildRedEdges == 0) {
                     this.Xr0Deletion(parentNode, siblingNode, nodeDirection);
                 } else {
-                    this.XrnDeletion(parentNode, siblingNode, siblingChildNode, nodeDirection, siblingChildRedEdges != 1);
+                    this.XrnDeletion(parentNode, siblingNode, siblingChildNode, nodeDirection, siblingChildRedEdges == 2);
                 }
                 return;
             }
@@ -425,18 +453,18 @@ public class RBTreeMap implements Map<Integer, Integer> {
         siblingNode.setNodeColor(RBTreeNode.NodeColor.BLACK);
     }
 
-    private void XXbInsertion(RBTreeNode parentNode, RBTreeNode treeNode, NodeDirection xNodeDirection) {
+    private void XXbInsertion(RBTreeNode parentNode, RBTreeNode treeNode, NodeDirection nodeDirection) {
         this.updateGrandParent(parentNode, treeNode);
-//        treeNode.setParent(parentNode.getParent());
-        if (xNodeDirection == NodeDirection.LEFT) {
+        parentNode.setNodeColor(RBTreeNode.NodeColor.RED);
+        treeNode.setNodeColor(RBTreeNode.NodeColor.BLACK);
+
+        if (nodeDirection == NodeDirection.LEFT) {
             this.addRBTreeChildNode(parentNode, treeNode.getRightChild(), NodeDirection.LEFT);
             this.addRBTreeChildNode(treeNode, parentNode, NodeDirection.RIGHT);
         } else {
             this.addRBTreeChildNode(parentNode, treeNode.getLeftChild(), NodeDirection.RIGHT);
             this.addRBTreeChildNode(treeNode, parentNode, NodeDirection.LEFT);
         }
-        parentNode.setNodeColor(RBTreeNode.NodeColor.RED);
-        treeNode.setNodeColor(RBTreeNode.NodeColor.BLACK);
 
         if (Objects.isNull(treeNode.getParent())) {
             this.rootNode = treeNode;
@@ -475,131 +503,134 @@ public class RBTreeMap implements Map<Integer, Integer> {
         siblingNode.setNodeColor(RBTreeNode.NodeColor.RED);
         if (parentNode.getNodeColor() == RBTreeNode.NodeColor.BLACK) {
             return true;
-        } else if (parentNode.getNodeColor() == RBTreeNode.NodeColor.RED) {
+        }
+        if (parentNode.getNodeColor() == RBTreeNode.NodeColor.RED) {
             parentNode.setNodeColor(RBTreeNode.NodeColor.BLACK);
         }
         return false;
     }
 
-    private void Xb1Deletion(RBTreeNode parentNode, RBTreeNode siblingNode, NodeDirection nodeDirection) {
-        RBTreeNode swapNode = new RBTreeNode(parentNode);
-        swapNode.setNodeColor(RBTreeNode.NodeColor.BLACK);
-
+    private void XbnDeletion(RBTreeNode parentNode, RBTreeNode siblingNode, NodeDirection nodeDirection, boolean isXb2Deletion) {
         if (nodeDirection == NodeDirection.LEFT) {
-            if (Objects.nonNull(siblingNode.getRightChild()) && siblingNode.getRightChild().getNodeColor() == RBTreeNode.NodeColor.RED) {
-                parentNode.copyNodeData(siblingNode);
+            if (!isXb2Deletion && Objects.nonNull(siblingNode.getRightChild()) && siblingNode.getRightChild().getNodeColor() == RBTreeNode.NodeColor.RED) {
+                this.updateGrandParent(parentNode, siblingNode);
                 siblingNode.getRightChild().setNodeColor(RBTreeNode.NodeColor.BLACK);
-                this.addRBTreeChildNode(parentNode, siblingNode.getRightChild(), NodeDirection.RIGHT);
-                this.addRBTreeChildNode(parentNode, swapNode, NodeDirection.LEFT);
-                this.addRBTreeChildNode(swapNode, siblingNode.getLeftChild(), NodeDirection.RIGHT);
+                siblingNode.setNodeColor(parentNode.getNodeColor());
+                parentNode.setNodeColor(RBTreeNode.NodeColor.BLACK);
+
+                this.addRBTreeChildNode(parentNode, siblingNode.getLeftChild(), NodeDirection.RIGHT);
+                this.addRBTreeChildNode(siblingNode, parentNode, NodeDirection.LEFT);
             } else if (Objects.nonNull(siblingNode.getLeftChild()) && siblingNode.getLeftChild().getNodeColor() == RBTreeNode.NodeColor.RED) {
-                RBTreeNode siblingChildNode = siblingNode.getLeftChild();
-                parentNode.copyNodeData(siblingChildNode);
-                this.addRBTreeChildNode(parentNode, swapNode, NodeDirection.LEFT);
-                this.addRBTreeChildNode(swapNode, siblingChildNode.getLeftChild(), NodeDirection.RIGHT);
+                RBTreeNode siblingChildNode = siblingNode.getRightChild();
+                this.updateGrandParent(parentNode, siblingChildNode);
+                siblingChildNode.setNodeColor(parentNode.getNodeColor());
+                parentNode.setNodeColor(RBTreeNode.NodeColor.BLACK);
+
                 this.addRBTreeChildNode(siblingNode, siblingChildNode.getRightChild(), NodeDirection.LEFT);
+                this.addRBTreeChildNode(parentNode, siblingChildNode.getLeftChild(), NodeDirection.RIGHT);
+                this.addRBTreeChildNode(siblingChildNode, siblingNode, NodeDirection.RIGHT);
+                this.addRBTreeChildNode(siblingChildNode, parentNode, NodeDirection.LEFT);
             }
         } else if (nodeDirection == NodeDirection.RIGHT) {
-            if (Objects.nonNull(siblingNode.getLeftChild()) && siblingNode.getLeftChild().getNodeColor() == RBTreeNode.NodeColor.RED) {
-                parentNode.copyNodeData(siblingNode);
+            if (!isXb2Deletion && Objects.nonNull(siblingNode.getLeftChild()) && siblingNode.getLeftChild().getNodeColor() == RBTreeNode.NodeColor.RED) {
+                this.updateGrandParent(parentNode, siblingNode);
                 siblingNode.getLeftChild().setNodeColor(RBTreeNode.NodeColor.BLACK);
-                this.addRBTreeChildNode(parentNode, siblingNode.getLeftChild(), NodeDirection.LEFT);
-                this.addRBTreeChildNode(parentNode, swapNode, NodeDirection.RIGHT);
-                this.addRBTreeChildNode(swapNode, siblingNode.getRightChild(), NodeDirection.LEFT);
+                siblingNode.setNodeColor(parentNode.getNodeColor());
+                parentNode.setNodeColor(RBTreeNode.NodeColor.BLACK);
+
+                this.addRBTreeChildNode(parentNode, siblingNode.getRightChild(), NodeDirection.LEFT);
+                this.addRBTreeChildNode(siblingNode, parentNode, NodeDirection.RIGHT);
             } else if (Objects.nonNull(siblingNode.getRightChild()) && siblingNode.getRightChild().getNodeColor() == RBTreeNode.NodeColor.RED) {
                 RBTreeNode siblingChildNode = siblingNode.getRightChild();
-                parentNode.copyNodeData(siblingChildNode);
-                this.addRBTreeChildNode(parentNode, swapNode, NodeDirection.RIGHT);
-                this.addRBTreeChildNode(swapNode, siblingChildNode.getRightChild(), NodeDirection.LEFT);
+                this.updateGrandParent(parentNode, siblingChildNode);
+                siblingChildNode.setNodeColor(parentNode.getNodeColor());
+                parentNode.setNodeColor(RBTreeNode.NodeColor.BLACK);
+
                 this.addRBTreeChildNode(siblingNode, siblingChildNode.getLeftChild(), NodeDirection.RIGHT);
+                this.addRBTreeChildNode(parentNode, siblingChildNode.getRightChild(), NodeDirection.LEFT);
+                this.addRBTreeChildNode(siblingChildNode, siblingNode, NodeDirection.LEFT);
+                this.addRBTreeChildNode(siblingChildNode, parentNode, NodeDirection.RIGHT);
             }
-        }
-    }
-
-
-    private void Xb2Deletion(RBTreeNode parentNode, RBTreeNode siblingNode, NodeDirection nodeDirection) {
-        RBTreeNode swapNode = new RBTreeNode(parentNode);
-        swapNode.setNodeColor(RBTreeNode.NodeColor.BLACK);
-
-        if (nodeDirection == NodeDirection.LEFT) {
-            RBTreeNode siblingChildNode = siblingNode.getLeftChild();
-            parentNode.copyNodeData(siblingChildNode);
-            this.addRBTreeChildNode(parentNode, swapNode, NodeDirection.LEFT);
-            this.addRBTreeChildNode(swapNode, siblingChildNode.getRightChild(), NodeDirection.RIGHT);
-            this.addRBTreeChildNode(siblingNode, siblingChildNode.getLeftChild(), NodeDirection.LEFT);
-        } else if (nodeDirection == NodeDirection.RIGHT) {
-            RBTreeNode siblingChildNode = siblingNode.getRightChild();
-            parentNode.copyNodeData(siblingChildNode);
-            this.addRBTreeChildNode(parentNode, swapNode, NodeDirection.RIGHT);
-            this.addRBTreeChildNode(swapNode, siblingChildNode.getRightChild(), NodeDirection.LEFT);
-            this.addRBTreeChildNode(siblingNode, siblingChildNode.getLeftChild(), NodeDirection.RIGHT);
         }
     }
 
     private void Xr0Deletion(RBTreeNode parentNode, RBTreeNode siblingNode, NodeDirection nodeDirection) {
-        RBTreeNode swapNode = new RBTreeNode(parentNode);
-        parentNode.copyNodeData(siblingNode);
+        this.updateGrandParent(parentNode, siblingNode);
+        siblingNode.setNodeColor(RBTreeNode.NodeColor.BLACK);
 
         if (nodeDirection == NodeDirection.LEFT) {
-            this.addRBTreeChildNode(parentNode, siblingNode.getRightChild(), NodeDirection.RIGHT);
-            this.addRBTreeChildNode(parentNode, swapNode, NodeDirection.LEFT);
-            this.addRBTreeChildNode(swapNode, siblingNode.getLeftChild(), NodeDirection.RIGHT);
-
             if (Objects.nonNull(siblingNode.getLeftChild())) {
                 siblingNode.getLeftChild().setNodeColor(RBTreeNode.NodeColor.RED);
             }
-        } else if (nodeDirection == NodeDirection.RIGHT) {
-            this.addRBTreeChildNode(parentNode, siblingNode.getLeftChild(), NodeDirection.LEFT);
-            this.addRBTreeChildNode(parentNode, swapNode, NodeDirection.RIGHT);
-            this.addRBTreeChildNode(swapNode, siblingNode.getRightChild(), NodeDirection.LEFT);
+            this.addRBTreeChildNode(parentNode, siblingNode.getLeftChild(), NodeDirection.RIGHT);
+            this.addRBTreeChildNode(siblingNode, parentNode, NodeDirection.LEFT);
 
+        } else if (nodeDirection == NodeDirection.RIGHT) {
             if (Objects.nonNull(siblingNode.getRightChild())) {
                 siblingNode.getRightChild().setNodeColor(RBTreeNode.NodeColor.RED);
             }
+            this.addRBTreeChildNode(parentNode, siblingNode.getRightChild(), NodeDirection.LEFT);
+            this.addRBTreeChildNode(siblingNode, parentNode, NodeDirection.RIGHT);
         }
     }
 
-    private void XrnDeletion(RBTreeNode parentNode, RBTreeNode siblingNode, RBTreeNode siblingChildNode, NodeDirection nodeDirection, boolean isXR2Deletion) {
-        RBTreeNode swapNode = new RBTreeNode(parentNode);
+    private void XrnDeletion(RBTreeNode parentNode, RBTreeNode siblingNode, RBTreeNode siblingChildNode, NodeDirection nodeDirection, boolean isXr2Deletion) {
         if (nodeDirection == NodeDirection.LEFT) {
-            if (!isXR2Deletion && Objects.nonNull(siblingChildNode.getRightChild()) && siblingChildNode.getRightChild().getNodeColor() == RBTreeNode.NodeColor.RED) {
-                parentNode.copyNodeData(siblingChildNode);
-                this.addRBTreeChildNode(parentNode, swapNode, NodeDirection.LEFT);
-                this.addRBTreeChildNode(swapNode, siblingChildNode.getLeftChild(), NodeDirection.RIGHT);
+            if (!isXr2Deletion && Objects.nonNull(siblingChildNode.getRightChild()) && siblingChildNode.getRightChild().getNodeColor() == RBTreeNode.NodeColor.RED) {
+                this.updateGrandParent(parentNode, siblingChildNode);
+                siblingChildNode.getLeftChild().setNodeColor(RBTreeNode.NodeColor.BLACK);
+
+                this.addRBTreeChildNode(parentNode, siblingChildNode.getLeftChild(), NodeDirection.RIGHT);
                 this.addRBTreeChildNode(siblingNode, siblingChildNode.getRightChild(), NodeDirection.LEFT);
-                siblingChildNode.getRightChild().setNodeColor(RBTreeNode.NodeColor.BLACK);
+                this.addRBTreeChildNode(siblingChildNode, siblingNode, NodeDirection.RIGHT);
+                this.addRBTreeChildNode(siblingChildNode, parentNode, NodeDirection.LEFT);
             } else if (Objects.nonNull(siblingChildNode.getLeftChild()) && siblingChildNode.getLeftChild().getNodeColor() == RBTreeNode.NodeColor.RED) {
-                parentNode.copyNodeData(siblingChildNode.getLeftChild());
-                this.addRBTreeChildNode(parentNode, swapNode, NodeDirection.LEFT);
-                this.addRBTreeChildNode(swapNode, siblingChildNode.getLeftChild().getLeftChild(), NodeDirection.LEFT);
-                this.addRBTreeChildNode(siblingNode, siblingChildNode.getLeftChild().getRightChild(), NodeDirection.RIGHT);
+                RBTreeNode siblingGrandChildNode = siblingChildNode.getLeftChild();
+                this.updateGrandParent(parentNode, siblingGrandChildNode);
+                siblingGrandChildNode.setNodeColor(RBTreeNode.NodeColor.BLACK);
+
+                this.addRBTreeChildNode(parentNode, siblingGrandChildNode.getLeftChild(), NodeDirection.RIGHT);
+                this.addRBTreeChildNode(siblingChildNode, siblingGrandChildNode.getRightChild(), NodeDirection.LEFT);
+                this.addRBTreeChildNode(siblingGrandChildNode, siblingNode, NodeDirection.RIGHT);
+                this.addRBTreeChildNode(siblingGrandChildNode, parentNode, NodeDirection.LEFT);
             }
         } else if (nodeDirection == NodeDirection.RIGHT) {
-            if (!isXR2Deletion && Objects.nonNull(siblingChildNode.getLeftChild()) && siblingChildNode.getLeftChild().getNodeColor() == RBTreeNode.NodeColor.RED) {
-                parentNode.copyNodeData(siblingChildNode);
-                this.addRBTreeChildNode(parentNode, swapNode, NodeDirection.RIGHT);
-                this.addRBTreeChildNode(swapNode, siblingChildNode.getRightChild(), NodeDirection.LEFT);
-                this.addRBTreeChildNode(siblingNode, siblingChildNode.getLeftChild(), NodeDirection.RIGHT);
+            if (!isXr2Deletion && Objects.nonNull(siblingChildNode.getLeftChild()) && siblingChildNode.getLeftChild().getNodeColor() == RBTreeNode.NodeColor.RED) {
+                this.updateGrandParent(parentNode, siblingChildNode);
                 siblingChildNode.getLeftChild().setNodeColor(RBTreeNode.NodeColor.BLACK);
+
+                this.addRBTreeChildNode(parentNode, siblingChildNode.getRightChild(), NodeDirection.LEFT);
+                this.addRBTreeChildNode(siblingNode, siblingChildNode.getLeftChild(), NodeDirection.RIGHT);
+                this.addRBTreeChildNode(siblingChildNode, siblingNode, NodeDirection.LEFT);
+                this.addRBTreeChildNode(siblingChildNode, parentNode, NodeDirection.RIGHT);
             } else if (Objects.nonNull(siblingChildNode.getRightChild()) && siblingChildNode.getRightChild().getNodeColor() == RBTreeNode.NodeColor.RED) {
-                parentNode.copyNodeData(siblingChildNode.getRightChild());
-                this.addRBTreeChildNode(parentNode, swapNode, NodeDirection.RIGHT);
-                this.addRBTreeChildNode(swapNode, siblingChildNode.getRightChild().getRightChild(), NodeDirection.LEFT);
-                this.addRBTreeChildNode(siblingNode, siblingChildNode.getRightChild().getLeftChild(), NodeDirection.RIGHT);
+                RBTreeNode siblingGrandChildNode = siblingChildNode.getRightChild();
+                this.updateGrandParent(parentNode, siblingGrandChildNode);
+                siblingGrandChildNode.setNodeColor(RBTreeNode.NodeColor.BLACK);
+
+                this.addRBTreeChildNode(parentNode, siblingGrandChildNode.getRightChild(), NodeDirection.LEFT);
+                this.addRBTreeChildNode(siblingChildNode, siblingGrandChildNode.getLeftChild(), NodeDirection.RIGHT);
+                this.addRBTreeChildNode(siblingGrandChildNode, siblingNode, NodeDirection.LEFT);
+                this.addRBTreeChildNode(siblingGrandChildNode, parentNode, NodeDirection.RIGHT);
             }
         }
     }
 
     private RBTreeNode replaceRBTreeChildNode(RBTreeNode parentNode, RBTreeNode treeNode, RBTreeNode newNode) {
-        this.addRBTreeChildNode(parentNode, newNode, (parentNode.getLeftChild() == treeNode) ? NodeDirection.LEFT : NodeDirection.RIGHT);
+        if (Objects.isNull(parentNode) && Objects.nonNull(newNode)) {
+            newNode.setNodeColor(RBTreeNode.NodeColor.BLACK);
+            newNode.setParent(null);
+            this.rootNode = newNode;
+        } else {
+            this.addRBTreeChildNode(parentNode, newNode, (parentNode.getLeftChild() == treeNode) ? NodeDirection.LEFT : NodeDirection.RIGHT);
+        }
         treeNode.empty();
         return newNode;
     }
 
     private void updateGrandParent(RBTreeNode parentNode, RBTreeNode childNode) {
         if (Objects.nonNull(parentNode.getParent())) {
-            this.addRBTreeChildNode(parentNode.getParent(), childNode,
-                    (parentNode.getParent().getLeftChild() == parentNode) ? NodeDirection.LEFT : NodeDirection.RIGHT);
+            this.addRBTreeChildNode(parentNode.getParent(), childNode, (parentNode.getParent().getLeftChild() == parentNode) ? NodeDirection.LEFT : NodeDirection.RIGHT);
         } else {
             childNode.setParent(parentNode.getParent());
         }
@@ -622,6 +653,10 @@ public class RBTreeMap implements Map<Integer, Integer> {
      * The method performs a level-order traversal of the tree, printing the key, value, and color.
      */
     public void displayRBTree() {
+        if (Objects.isNull(this.rootNode)) {
+            logger.info("Tree is empty.");
+            return;
+        }
         logger.info("Displaying Red-Black Tree:");
 
         Queue<AbstractMap.SimpleEntry<RBTreeNode, Integer>> queue = new LinkedList<>();
