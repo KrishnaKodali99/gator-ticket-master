@@ -1,4 +1,3 @@
-import java.util.Arrays;
 import java.util.NoSuchElementException;
 
 public class BinaryMinHeap<K extends Comparable<K>> {
@@ -97,18 +96,18 @@ public class BinaryMinHeap<K extends Comparable<K>> {
     }
 
     /**
-     * @return current size of the heap
+     * @return current size of the heap i.e. number of elements.
      */
     public int size() {
         return this.currentSize;
     }
 
+    /**
+     *
+     * @return `true` if the heap is empty, `false` otherwise.
+     */
     public boolean isEmpty() {
         return this.currentSize == 0;
-    }
-
-    public K[] getHeapArray() {
-        return Arrays.copyOfRange(this.heapArray, 0, this.currentSize);
     }
 
     private void heapifyUp(int index) {

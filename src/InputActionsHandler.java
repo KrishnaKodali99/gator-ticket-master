@@ -6,11 +6,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class InputActionsHandler {
-    private BinaryMinHeap<Integer> availableSeatsList;
+    private final BinaryMinHeap<Integer> availableSeatsList;
 
-    private BinaryMinHeap<User> usersWaitList;
+    private final BinaryMinHeap<User> usersWaitList;
 
-    private RBTreeMap userReservationMap;
+    private final RBTreeMap userReservationMap;
 
     private int availableSeats;
 
@@ -41,13 +41,13 @@ public class InputActionsHandler {
     }
 
     public String reserve(Integer userId, Integer userPriority) {
-        if (!availableSeatsList.isEmpty()) {
-            int seatId = availableSeatsList.extractMin();
-            userReservationMap.put(userId, seatId);
-            return String.format("User %d reserved seat %d", userId, seatId);
+        if (availableSeatsList.isEmpty()) {
+            usersWaitList.insert(new User(userId, userPriority, System.nanoTime()));
+            return String.format("User %d is added to the waiting list", userId);
         }
-        usersWaitList.insert(new User(userId, userPriority, System.nanoTime()));
-        return String.format("User %d is added to the waiting list", userId);
+        int seatId = availableSeatsList.extractMin();
+        userReservationMap.put(userId, seatId);
+        return String.format("User %d reserved seat %d", userId, seatId);
     }
 
     public List<String> cancel(Integer seatId, Integer userId) {
