@@ -1,8 +1,7 @@
 import java.util.Arrays;
 import java.util.NoSuchElementException;
-import java.util.PriorityQueue;
 
-public class BinaryMinHeap extends PriorityQueue<Integer> {
+public class BinaryMinHeap {
     private final int[] heapArray;
 
     private int currentSize;
@@ -46,8 +45,45 @@ public class BinaryMinHeap extends PriorityQueue<Integer> {
         this.currentSize--;
         this.heapArray[0] = this.heapArray[this.currentSize];
         heapifyDown(0);
+        this.heapArray[currentSize] = 0;
 
         return minValue;
+    }
+
+    public Integer removeElement(int element) {
+        int removedElement;
+
+        if (element == this.heapArray[0]) {
+            return this.extractMin();
+        }
+        if (element == this.heapArray[this.currentSize - 1]) {
+            removedElement = this.heapArray[this.currentSize - 1];
+            this.heapArray[this.currentSize - 1] = 0;
+            this.currentSize--;
+            return removedElement;
+        }
+
+        for (int index = 1; index < this.currentSize - 1; index++) {
+            if (this.heapArray[index] == element) {
+                removedElement = this.heapArray[index];
+
+                this.heapArray[index] = this.heapArray[this.currentSize - 1];
+                int replacedElement = this.heapArray[index];
+                this.currentSize--;
+
+                int parentIndex = (index - 1) / 2;
+                if (replacedElement > this.heapArray[parentIndex]) {
+                    this.heapifyDown(index);
+                } else {
+                    this.heapifyUp(index);
+                }
+
+                this.heapArray[this.currentSize] = 0;
+                return removedElement;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -62,8 +98,15 @@ public class BinaryMinHeap extends PriorityQueue<Integer> {
         return this.heapArray[0];
     }
 
+    /**
+     * @return current size of the heap
+     */
     public int size() {
         return this.currentSize;
+    }
+
+    public boolean isEmpty() {
+        return this.currentSize == 0;
     }
 
     public int[] getHeapArray() {
