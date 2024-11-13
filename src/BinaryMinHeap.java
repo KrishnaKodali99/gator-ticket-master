@@ -1,13 +1,14 @@
 import java.util.Arrays;
 import java.util.NoSuchElementException;
 
-public class BinaryMinHeap {
-    private final int[] heapArray;
+public class BinaryMinHeap<K extends Comparable<K>> {
+    private final K[] heapArray;
 
     private int currentSize;
 
+    @SuppressWarnings("unchecked")
     public BinaryMinHeap(int size) {
-        this.heapArray = new int[size];
+        this.heapArray = (K[]) new Comparable[size];
         this.currentSize = 0;
     }
 
@@ -18,7 +19,7 @@ public class BinaryMinHeap {
      * @return {@code true} if the value was successfully inserted into the heap,
      * {@code false} if the insertion failed (e.g., due to insufficient space or invalid input).
      */
-    public boolean insert(int value) {
+    public boolean insert(K value) {
         if (this.currentSize >= this.heapArray.length) {
             return false;
         }
@@ -36,53 +37,50 @@ public class BinaryMinHeap {
      * @return The minimum value (root) of the heap.
      * @throws NoSuchElementException if the heap is empty and there is no minimum value to extract.
      */
-    public Integer extractMin() {
+    public K extractMin() {
         if (this.currentSize <= 0) {
             throw new NoSuchElementException("Cannot extract minimum: Queue is empty.");
         }
-        int minValue = this.heapArray[0];
+        K minValue = this.heapArray[0];
 
         this.currentSize--;
         this.heapArray[0] = this.heapArray[this.currentSize];
         heapifyDown(0);
-        this.heapArray[currentSize] = 0;
+        this.heapArray[currentSize] = null;
 
         return minValue;
     }
 
-    public Integer removeElement(int element) {
-        int removedElement;
-
-        if (element == this.heapArray[0]) {
+    public K removeElement(K element) {
+        K removedElement;
+        if (element.equals(this.heapArray[0])) {
             return this.extractMin();
         }
-        if (element == this.heapArray[this.currentSize - 1]) {
+        if (element.equals(this.heapArray[this.currentSize - 1])) {
             removedElement = this.heapArray[this.currentSize - 1];
-            this.heapArray[this.currentSize - 1] = 0;
+            this.heapArray[this.currentSize - 1] = null;
             this.currentSize--;
             return removedElement;
         }
 
         for (int index = 1; index < this.currentSize - 1; index++) {
-            if (this.heapArray[index] == element) {
+            if (element.equals(this.heapArray[index])) {
                 removedElement = this.heapArray[index];
 
                 this.heapArray[index] = this.heapArray[this.currentSize - 1];
-                int replacedElement = this.heapArray[index];
                 this.currentSize--;
 
                 int parentIndex = (index - 1) / 2;
-                if (replacedElement > this.heapArray[parentIndex]) {
+                if (this.heapArray[index].compareTo(this.heapArray[parentIndex]) > 0) {
                     this.heapifyDown(index);
                 } else {
                     this.heapifyUp(index);
                 }
 
-                this.heapArray[this.currentSize] = 0;
+                this.heapArray[this.currentSize] = null;
                 return removedElement;
             }
         }
-
         return null;
     }
 
@@ -91,7 +89,7 @@ public class BinaryMinHeap {
      *
      * @return The minimum value (root) of the heap, or {@code null} if the heap is empty.
      */
-    public Integer peek() {
+    public K peek() {
         if (this.currentSize <= 0) {
             return null;
         }
@@ -109,7 +107,7 @@ public class BinaryMinHeap {
         return this.currentSize == 0;
     }
 
-    public int[] getHeapArray() {
+    public K[] getHeapArray() {
         return Arrays.copyOfRange(this.heapArray, 0, this.currentSize);
     }
 
@@ -121,7 +119,7 @@ public class BinaryMinHeap {
             return;
         }
 
-        if (this.heapArray[parentIndex] > this.heapArray[heapifyIndex]) {
+        if (this.heapArray[parentIndex].compareTo(this.heapArray[heapifyIndex]) > 0) {
             this.swapElements(parentIndex, heapifyIndex);
             heapifyIndex = parentIndex;
         }
@@ -137,10 +135,10 @@ public class BinaryMinHeap {
         int leftChildIndex = (2 * index) + 1;
         int rightChildIndex = (2 * index) + 2;
 
-        if (leftChildIndex <= this.currentSize && this.heapArray[leftChildIndex] <= this.heapArray[heapifyIndex]) {
+        if (leftChildIndex <= this.currentSize && this.heapArray[leftChildIndex].compareTo(this.heapArray[heapifyIndex]) <= 0) {
             heapifyIndex = leftChildIndex;
         }
-        if (rightChildIndex <= this.currentSize && this.heapArray[rightChildIndex] <= this.heapArray[heapifyIndex]) {
+        if (rightChildIndex <= this.currentSize && this.heapArray[rightChildIndex].compareTo(this.heapArray[heapifyIndex]) <= 0) {
             heapifyIndex = rightChildIndex;
         }
         if (heapifyIndex == index) {
@@ -151,7 +149,7 @@ public class BinaryMinHeap {
     }
 
     private void swapElements(int index1, int index2) {
-        int temp = this.heapArray[index1];
+        K temp = this.heapArray[index1];
         this.heapArray[index1] = this.heapArray[index2];
         this.heapArray[index2] = temp;
     }
