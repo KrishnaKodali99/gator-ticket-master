@@ -1,7 +1,13 @@
 public class GatorTicketMaster {
     public static void main(String[] args) {
         FileIOProcessor fileIOProcessor = new FileIOProcessor();
-        String filePath = "/Users/krishnakodali/Documents/university-of-florida/academics/sem-1/ADS/project/tests/test-1.txt";
+
+        if (args.length < 1) {
+            System.out.println("Error: Please provide a file name as an argument.");
+            return;
+        }
+
+        String filePath = args[0];
         fileIOProcessor.processFile(filePath);
     }
 }

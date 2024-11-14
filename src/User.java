@@ -1,5 +1,9 @@
+/**
+ * Represents a user with a unique identifier (userId), a priority level (userPriority), and a timestamp (timestamp).
+ * This class implements the Comparable<User> interface to allow users to be compared based on their priority and timestamp.
+ */
 public class User implements Comparable<User> {
-    private final int userId;
+    private int userId;
 
     private int userPriority;
 
@@ -19,8 +23,16 @@ public class User implements Comparable<User> {
         return this.userId;
     }
 
+    public void setUserId(Integer userId) {
+        this.userId = userId;
+    }
+
     public long getTimestamp() {
         return this.timestamp;
+    }
+
+    public void setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
     }
 
     @Override

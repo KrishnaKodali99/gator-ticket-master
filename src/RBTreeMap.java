@@ -10,18 +10,14 @@ import java.util.Queue;
 import java.util.Set;
 
 public class RBTreeMap implements Map<Integer, Integer> {
+    private static final Logger logger = new Logger();
+
     private RBTreeNode rootNode;
 
     private int size;
 
-    private static final Logger logger = new Logger();
-
     public RBTreeMap() {
         this.size = 0;
-    }
-
-    public enum NodeDirection {
-        LEFT, RIGHT
     }
 
     @Override
@@ -43,7 +39,9 @@ public class RBTreeMap implements Map<Integer, Integer> {
 
     @Override
     public boolean containsValue(Object value) {
-        return false;
+        assert Objects.nonNull(value) && value instanceof Integer : "Key should not be null";
+
+        return Objects.nonNull(this.searchValue(this.rootNode, (Integer) value));
     }
 
     @Override
@@ -67,7 +65,7 @@ public class RBTreeMap implements Map<Integer, Integer> {
     public Integer remove(Object key) {
         assert Objects.nonNull(key) : "Key should not be null";
 
-        if (this.size == 0) {
+        if (this.size == 0 || Objects.isNull(this.rootNode)) {
             return null;
         }
 
@@ -89,7 +87,6 @@ public class RBTreeMap implements Map<Integer, Integer> {
     @Override
     public void clear() {
         this.clearAllNodes(this.rootNode);
-        logger.info("Cleared all data from the Red-Black tree.");
     }
 
     @Override
@@ -138,13 +135,7 @@ public class RBTreeMap implements Map<Integer, Integer> {
         return Map.super.replace(key, value);
     }
 
-    /**
-     * Searches for a specific key in the Red-Black Tree.
-     *
-     * @param treeNode node pointer
-     * @param key      value to search
-     * @return the value of the node if key is found, else null.
-     */
+    // Searches for a key in the Red-Black tree similar to search in a BST.
     private Integer searchKey(RBTreeNode treeNode, int key) {
         if (Objects.isNull(treeNode)) {
             return null;
@@ -159,15 +150,24 @@ public class RBTreeMap implements Map<Integer, Integer> {
         }
     }
 
-    /**
-     * Inserts a key-value pair into a new node in the Red-Black Tree.
-     * Ensures the Red-Black properties during insertion by balancing the tree and adjusting node colors through rotations and recoloring.
-     *
-     * @param key      The key of the key-value pair to be inserted. The key must be unique within the tree.
-     * @param value    The value associated with the key to be inserted. This value will be stored in the node.
-     * @param treeNode The node at which to start the insertion. The method will recursively traverse the tree
-     *                 and insert the new key-value pair in the correct position.
-     */
+    // Recursively searches for a value in the Red-Black tree and returns it if found, otherwise null.
+    private Integer searchValue(RBTreeNode treeNode, int value) {
+        if (Objects.isNull(treeNode)) {
+            return null;
+        }
+        if (value == treeNode.getValue()) {
+            return value;
+        }
+
+        Integer leftSearch = searchValue(treeNode.getLeftChild(), value);
+        if (Objects.nonNull(leftSearch)) {
+            return leftSearch;
+        }
+
+        return searchValue(treeNode.getRightChild(), value);
+    }
+
+    // Inserts a key-value pair into the Red-Black Tree and balances the tree based on the type of insetion through rotations and recoloring.
     private void insertKVPair(Integer key, Integer value, RBTreeNode treeNode) {
         // If the node is null, initialize it as the root node.
         if (Objects.isNull(treeNode)) {
@@ -200,18 +200,11 @@ public class RBTreeMap implements Map<Integer, Integer> {
             }
         }
 
-        // Balance the Red-Black tree after insertion, based on the type of imbalance.
+        // Balance the Red-Black tree after insertion, based on the type of imbalance. Consider treeNode here as the pp node.
         this.balanceRBTreePostInsert(treeNode, nodeDirection);
     }
 
-    /**
-     * Deletes a key-value pair from the Red-Black tree while ensuring the tree remains balanced according to Re-Black tree properties
-     * The method uses a stack to track visited nodes, instead of recursion, for rebalancing if needed.
-     *
-     * @param key      The key of the node to be deleted.
-     * @param treeNode The root node of the tree or subtree where the deletion is to take place.
-     * @return The value of the deleted node, or null if the node was not found.
-     */
+    // Deletes a key-value pair if found and balances the Red-Black tree based on the type of deletion.
     private Integer deleteKVPair(int key, RBTreeNode treeNode) {
         while (Objects.nonNull(treeNode) && key != treeNode.getKey()) {
             if (key < treeNode.getKey()) {
@@ -241,11 +234,7 @@ public class RBTreeMap implements Map<Integer, Integer> {
         return value;
     }
 
-    /**
-     * This method recursively removes all nodes in the subtree rooted at the given rbTreeNode, resetting the tree.
-     *
-     * @param rbTreeNode The root node of the tree or subtree to be cleared.
-     */
+    // This method recursively removes all nodes in the subtree rooted at the given rbTreeNode, resetting the tree.
     private void clearAllNodes(RBTreeNode rbTreeNode) {
         if (Objects.isNull(rbTreeNode)) {
             return;
@@ -257,6 +246,7 @@ public class RBTreeMap implements Map<Integer, Integer> {
         rbTreeNode.setRightChild(null);
     }
 
+    // Recursively traverses the Red-Black tree and adds either keys or values to the given collection.
     private void getKeyValues(RBTreeNode treeNode, Collection<Integer> collection, boolean insertKeys) {
         if (Objects.isNull(treeNode)) {
             return;
@@ -266,6 +256,7 @@ public class RBTreeMap implements Map<Integer, Integer> {
         getKeyValues(treeNode.getRightChild(), collection, insertKeys);
     }
 
+    // Traverse the Red-Black tree in-order and adds key-value pairs to the given set.
     private void addEntriesInOrder(RBTreeNode treeNode, Set<Entry<Integer, Integer>> set) {
         if (Objects.isNull(treeNode)) {
             return;
@@ -276,12 +267,7 @@ public class RBTreeMap implements Map<Integer, Integer> {
         addEntriesInOrder(treeNode.getRightChild(), set);
     }
 
-    /**
-     * This method adjusts the tree to maintain Red-Black properties, by balancing the Red-Black Tree after an insertion.
-     *
-     * @param treeNode      node to which the newly inserted node is added.
-     * @param nodeDirection nodeDirection the direction (left or right) of the inserted node relative to its parent.
-     */
+    // Balances the Red-Black tree after an insertion, adjusting node colors and performing rotations based on the tree's imbalance.
     private void balanceRBTreePostInsert(RBTreeNode treeNode, NodeDirection nodeDirection) {
         boolean continueLoop = true;
 
@@ -326,6 +312,7 @@ public class RBTreeMap implements Map<Integer, Integer> {
         }
     }
 
+    // Balances the Red-Black tree after a deletion, adjusting node colors and performing rotations based on the tree's imbalance.
     private void balanceRBTreePostDelete(RBTreeNode treeNode) {
         RBTreeNode.NodeColor deletedNodeColor = treeNode.getNodeColor();
         boolean isExternalNode = false;
@@ -430,6 +417,7 @@ public class RBTreeMap implements Map<Integer, Integer> {
         }
     }
 
+    // Determines the insert type based on sibling color and if parent and grandparent are in the same direction (LEFT or RIGHT).
     private boolean determineInsertType(RBTreeNode parentNode, RBTreeNode treeNode, RBTreeNode siblingNode, NodeDirection nodeDirection, boolean isXXInsertion) {
         if (Objects.nonNull(siblingNode) && siblingNode.getNodeColor() == RBTreeNode.NodeColor.RED) {
             this.XYrInsertion(parentNode, treeNode, siblingNode);
@@ -443,6 +431,7 @@ public class RBTreeMap implements Map<Integer, Integer> {
         return false;
     }
 
+    // Handles the insertion of type LLr, LRr, RRr and RLr for balancing the Red-Black tree.
     private void XYrInsertion(RBTreeNode parentNode, RBTreeNode treeNode, RBTreeNode siblingNode) {
         if (Objects.isNull(parentNode.getParent())) {
             parentNode.setNodeColor(RBTreeNode.NodeColor.BLACK);
@@ -453,6 +442,7 @@ public class RBTreeMap implements Map<Integer, Integer> {
         siblingNode.setNodeColor(RBTreeNode.NodeColor.BLACK);
     }
 
+    // Handles the insertion of type LLb and RRb, for balancing the Red-Black tree.
     private void XXbInsertion(RBTreeNode parentNode, RBTreeNode treeNode, NodeDirection nodeDirection) {
         this.updateGrandParent(parentNode, treeNode);
         parentNode.setNodeColor(RBTreeNode.NodeColor.RED);
@@ -466,11 +456,10 @@ public class RBTreeMap implements Map<Integer, Integer> {
             this.addRBTreeChildNode(treeNode, parentNode, NodeDirection.LEFT);
         }
 
-        if (Objects.isNull(treeNode.getParent())) {
-            this.rootNode = treeNode;
-        }
+        this.checkAndUpdateRoot(treeNode);
     }
 
+    // Handles the insertion of type LRb1, LRb2, RLb1 and RLb2, for balancing the Red-Black tree.
     private void XYbInsertion(RBTreeNode parentNode, RBTreeNode treeNode, NodeDirection xNodeDirection) {
         RBTreeNode childNode = null;
         if (xNodeDirection == NodeDirection.LEFT) {
@@ -497,10 +486,14 @@ public class RBTreeMap implements Map<Integer, Integer> {
             childNode.setNodeColor(RBTreeNode.NodeColor.BLACK);
             parentNode.setNodeColor(RBTreeNode.NodeColor.RED);
         }
+        this.checkAndUpdateRoot(childNode);
     }
 
+    // Handles the deletion of type Lb0 and Rb0, for balancing the Red-Black tree.
     private boolean Xb0Deletion(RBTreeNode parentNode, RBTreeNode siblingNode) {
         siblingNode.setNodeColor(RBTreeNode.NodeColor.RED);
+
+        //Flip color of the nodes and continue to balance.
         if (parentNode.getNodeColor() == RBTreeNode.NodeColor.BLACK) {
             return true;
         }
@@ -510,6 +503,7 @@ public class RBTreeMap implements Map<Integer, Integer> {
         return false;
     }
 
+    // Handles the deletion of type Lb1, Lb2, Rb1 and Rb2, for balancing the Red-Black tree.
     private void XbnDeletion(RBTreeNode parentNode, RBTreeNode siblingNode, NodeDirection nodeDirection, boolean isXb2Deletion) {
         if (nodeDirection == NodeDirection.LEFT) {
             if (!isXb2Deletion && Objects.nonNull(siblingNode.getRightChild()) && siblingNode.getRightChild().getNodeColor() == RBTreeNode.NodeColor.RED) {
@@ -518,18 +512,24 @@ public class RBTreeMap implements Map<Integer, Integer> {
                 siblingNode.setNodeColor(parentNode.getNodeColor());
                 parentNode.setNodeColor(RBTreeNode.NodeColor.BLACK);
 
+                // Perform RR Rotation by pivoting around the siblingChildNode node.
                 this.addRBTreeChildNode(parentNode, siblingNode.getLeftChild(), NodeDirection.RIGHT);
                 this.addRBTreeChildNode(siblingNode, parentNode, NodeDirection.LEFT);
+
+                this.checkAndUpdateRoot(siblingNode);
             } else if (Objects.nonNull(siblingNode.getLeftChild()) && siblingNode.getLeftChild().getNodeColor() == RBTreeNode.NodeColor.RED) {
-                RBTreeNode siblingChildNode = siblingNode.getRightChild();
+                RBTreeNode siblingChildNode = siblingNode.getLeftChild();
                 this.updateGrandParent(parentNode, siblingChildNode);
                 siblingChildNode.setNodeColor(parentNode.getNodeColor());
                 parentNode.setNodeColor(RBTreeNode.NodeColor.BLACK);
 
+                // Perform RL Rotation by pivoting around the siblingChildNode node.
                 this.addRBTreeChildNode(siblingNode, siblingChildNode.getRightChild(), NodeDirection.LEFT);
                 this.addRBTreeChildNode(parentNode, siblingChildNode.getLeftChild(), NodeDirection.RIGHT);
                 this.addRBTreeChildNode(siblingChildNode, siblingNode, NodeDirection.RIGHT);
                 this.addRBTreeChildNode(siblingChildNode, parentNode, NodeDirection.LEFT);
+
+                this.checkAndUpdateRoot(siblingChildNode);
             }
         } else if (nodeDirection == NodeDirection.RIGHT) {
             if (!isXb2Deletion && Objects.nonNull(siblingNode.getLeftChild()) && siblingNode.getLeftChild().getNodeColor() == RBTreeNode.NodeColor.RED) {
@@ -538,22 +538,29 @@ public class RBTreeMap implements Map<Integer, Integer> {
                 siblingNode.setNodeColor(parentNode.getNodeColor());
                 parentNode.setNodeColor(RBTreeNode.NodeColor.BLACK);
 
+                // Perform LL Rotation by pivoting around the siblingChildNode node.
                 this.addRBTreeChildNode(parentNode, siblingNode.getRightChild(), NodeDirection.LEFT);
                 this.addRBTreeChildNode(siblingNode, parentNode, NodeDirection.RIGHT);
+
+                this.checkAndUpdateRoot(siblingNode);
             } else if (Objects.nonNull(siblingNode.getRightChild()) && siblingNode.getRightChild().getNodeColor() == RBTreeNode.NodeColor.RED) {
                 RBTreeNode siblingChildNode = siblingNode.getRightChild();
                 this.updateGrandParent(parentNode, siblingChildNode);
                 siblingChildNode.setNodeColor(parentNode.getNodeColor());
                 parentNode.setNodeColor(RBTreeNode.NodeColor.BLACK);
 
+                // Perform LR Rotation by pivoting around the siblingChildNode node.
                 this.addRBTreeChildNode(siblingNode, siblingChildNode.getLeftChild(), NodeDirection.RIGHT);
                 this.addRBTreeChildNode(parentNode, siblingChildNode.getRightChild(), NodeDirection.LEFT);
                 this.addRBTreeChildNode(siblingChildNode, siblingNode, NodeDirection.LEFT);
                 this.addRBTreeChildNode(siblingChildNode, parentNode, NodeDirection.RIGHT);
+
+                this.checkAndUpdateRoot(siblingChildNode);
             }
         }
     }
 
+    // Handles the deletion of type Lr(0), Rr(0) for balancing the Red-Black tree.
     private void Xr0Deletion(RBTreeNode parentNode, RBTreeNode siblingNode, NodeDirection nodeDirection) {
         this.updateGrandParent(parentNode, siblingNode);
         siblingNode.setNodeColor(RBTreeNode.NodeColor.BLACK);
@@ -564,7 +571,6 @@ public class RBTreeMap implements Map<Integer, Integer> {
             }
             this.addRBTreeChildNode(parentNode, siblingNode.getLeftChild(), NodeDirection.RIGHT);
             this.addRBTreeChildNode(siblingNode, parentNode, NodeDirection.LEFT);
-
         } else if (nodeDirection == NodeDirection.RIGHT) {
             if (Objects.nonNull(siblingNode.getRightChild())) {
                 siblingNode.getRightChild().setNodeColor(RBTreeNode.NodeColor.RED);
@@ -572,8 +578,11 @@ public class RBTreeMap implements Map<Integer, Integer> {
             this.addRBTreeChildNode(parentNode, siblingNode.getRightChild(), NodeDirection.LEFT);
             this.addRBTreeChildNode(siblingNode, parentNode, NodeDirection.RIGHT);
         }
+
+        this.checkAndUpdateRoot(siblingNode);
     }
 
+    // Handles the deletion of type Lr(1), Lr(2), Rr(1) and Rr(2), for balancing the Red-Black tree.
     private void XrnDeletion(RBTreeNode parentNode, RBTreeNode siblingNode, RBTreeNode siblingChildNode, NodeDirection nodeDirection, boolean isXr2Deletion) {
         if (nodeDirection == NodeDirection.LEFT) {
             if (!isXr2Deletion && Objects.nonNull(siblingChildNode.getRightChild()) && siblingChildNode.getRightChild().getNodeColor() == RBTreeNode.NodeColor.RED) {
@@ -584,6 +593,8 @@ public class RBTreeMap implements Map<Integer, Integer> {
                 this.addRBTreeChildNode(siblingNode, siblingChildNode.getRightChild(), NodeDirection.LEFT);
                 this.addRBTreeChildNode(siblingChildNode, siblingNode, NodeDirection.RIGHT);
                 this.addRBTreeChildNode(siblingChildNode, parentNode, NodeDirection.LEFT);
+
+                this.checkAndUpdateRoot(siblingChildNode);
             } else if (Objects.nonNull(siblingChildNode.getLeftChild()) && siblingChildNode.getLeftChild().getNodeColor() == RBTreeNode.NodeColor.RED) {
                 RBTreeNode siblingGrandChildNode = siblingChildNode.getLeftChild();
                 this.updateGrandParent(parentNode, siblingGrandChildNode);
@@ -593,6 +604,8 @@ public class RBTreeMap implements Map<Integer, Integer> {
                 this.addRBTreeChildNode(siblingChildNode, siblingGrandChildNode.getRightChild(), NodeDirection.LEFT);
                 this.addRBTreeChildNode(siblingGrandChildNode, siblingNode, NodeDirection.RIGHT);
                 this.addRBTreeChildNode(siblingGrandChildNode, parentNode, NodeDirection.LEFT);
+
+                this.checkAndUpdateRoot(siblingGrandChildNode);
             }
         } else if (nodeDirection == NodeDirection.RIGHT) {
             if (!isXr2Deletion && Objects.nonNull(siblingChildNode.getLeftChild()) && siblingChildNode.getLeftChild().getNodeColor() == RBTreeNode.NodeColor.RED) {
@@ -603,6 +616,8 @@ public class RBTreeMap implements Map<Integer, Integer> {
                 this.addRBTreeChildNode(siblingNode, siblingChildNode.getLeftChild(), NodeDirection.RIGHT);
                 this.addRBTreeChildNode(siblingChildNode, siblingNode, NodeDirection.LEFT);
                 this.addRBTreeChildNode(siblingChildNode, parentNode, NodeDirection.RIGHT);
+
+                this.checkAndUpdateRoot(siblingChildNode);
             } else if (Objects.nonNull(siblingChildNode.getRightChild()) && siblingChildNode.getRightChild().getNodeColor() == RBTreeNode.NodeColor.RED) {
                 RBTreeNode siblingGrandChildNode = siblingChildNode.getRightChild();
                 this.updateGrandParent(parentNode, siblingGrandChildNode);
@@ -612,10 +627,13 @@ public class RBTreeMap implements Map<Integer, Integer> {
                 this.addRBTreeChildNode(siblingChildNode, siblingGrandChildNode.getLeftChild(), NodeDirection.RIGHT);
                 this.addRBTreeChildNode(siblingGrandChildNode, siblingNode, NodeDirection.LEFT);
                 this.addRBTreeChildNode(siblingGrandChildNode, parentNode, NodeDirection.RIGHT);
+
+                this.checkAndUpdateRoot(siblingGrandChildNode);
             }
         }
     }
 
+    // Replaces a child node in the parent node with a new node, updating the root if necessary.
     private RBTreeNode replaceRBTreeChildNode(RBTreeNode parentNode, RBTreeNode treeNode, RBTreeNode newNode) {
         if (Objects.isNull(parentNode) && Objects.nonNull(newNode)) {
             newNode.setNodeColor(RBTreeNode.NodeColor.BLACK);
@@ -628,6 +646,7 @@ public class RBTreeMap implements Map<Integer, Integer> {
         return newNode;
     }
 
+    // Updates the parent pointer of the parent node, setting the childNode as its new child node.
     private void updateGrandParent(RBTreeNode parentNode, RBTreeNode childNode) {
         if (Objects.nonNull(parentNode.getParent())) {
             this.addRBTreeChildNode(parentNode.getParent(), childNode, (parentNode.getParent().getLeftChild() == parentNode) ? NodeDirection.LEFT : NodeDirection.RIGHT);
@@ -636,6 +655,7 @@ public class RBTreeMap implements Map<Integer, Integer> {
         }
     }
 
+    // Adds a child node to the parent node (left or right) and sets the parent reference for the child.
     private void addRBTreeChildNode(RBTreeNode parentNode, RBTreeNode childNode, NodeDirection childNodeDirection) {
         if (childNodeDirection == NodeDirection.LEFT) {
             parentNode.setLeftChild(childNode);
@@ -648,10 +668,17 @@ public class RBTreeMap implements Map<Integer, Integer> {
         }
     }
 
-    /**
-     * Displays the details of the nodes in a Red-Black tree, at their respective height levels.
-     * The method performs a level-order traversal of the tree, printing the key, value, and color.
-     */
+    // Checks if the node is the root and updates it if necessary.
+    private void checkAndUpdateRoot(RBTreeNode treeNode) {
+        if (Objects.isNull(treeNode)) {
+            return;
+        }
+        if (Objects.isNull(treeNode.getParent())) {
+            this.rootNode = treeNode;
+        }
+    }
+
+    // Performs a level-order traversal of the Red-Black tree, displaying node details (key, value, and color) at each level.
     public void displayRBTree() {
         if (Objects.isNull(this.rootNode)) {
             logger.info("Tree is empty.");
@@ -680,5 +707,9 @@ public class RBTreeMap implements Map<Integer, Integer> {
             currentLevel++;
             System.out.println();
         }
+    }
+
+    public enum NodeDirection {
+        LEFT, RIGHT
     }
 }

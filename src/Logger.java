@@ -9,6 +9,15 @@ public class Logger {
     private static final String DEBUG = "DEBUG";
     private static final String ERROR = "ERROR";
 
+    private static void log(String level, String message) {
+        String timestamp = LocalDateTime.now().format(dateTimeFormatter);
+        if (level.equals(ERROR)) {
+            System.err.println(timestamp + " [" + level + "] " + message);
+        } else {
+            System.out.println(timestamp + " [" + level + "] " + message);
+        }
+    }
+
     public void info(String message) {
         log(INFO, message);
     }
@@ -23,14 +32,5 @@ public class Logger {
 
     public void error(String message) {
         log(ERROR, message);
-    }
-
-    private static void log(String level, String message) {
-        String timestamp = LocalDateTime.now().format(dateTimeFormatter);
-        if (level.equals(ERROR)) {
-            System.err.println(timestamp + " [" + level + "] " + message);
-        } else {
-            System.out.println(timestamp + " [" + level + "] " + message);
-        }
     }
 }

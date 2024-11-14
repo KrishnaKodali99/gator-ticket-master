@@ -10,9 +10,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class FileIOProcessor {
-    private final Logger logger;
-    private final InputActionsHandler inputActionsHandler;
-
     private static final String INITIALIZE_REGEX = "Initialize\\((\\d+)\\)\\s*$";
     private static final String AVAILABLE_REGEX = "Available\\(\\)\\s*$";
     private static final String RESERVE_REGEX = "Reserve\\((\\d+),\\s*(\\d+)\\)\\s*$";
@@ -21,13 +18,22 @@ public class FileIOProcessor {
     private static final String UPDATE_PRIORITY_REGEX = "UpdatePriority\\((\\d+),\\s*(\\d+)\\)\\s*$";
     private static final String ADD_SEATS_REGEX = "AddSeats\\((\\d+)\\)\\s*$";
     private static final String PRINT_RESERVATIONS_REGEX = "PrintReservations\\(\\)\\s*$";
+    private static final String RELEASE_SEATS_REGEX = "ReleaseSeats\\((\\d+),\\s*(\\d+)\\)\\s*$";
     private static final String QUIT_REGEX = "Quit\\(\\)\\s*$";
+
+    private final Logger logger;
+    private final InputActionsHandler inputActionsHandler;
 
     public FileIOProcessor() {
         logger = new Logger();
         inputActionsHandler = new InputActionsHandler();
     }
 
+    /**
+     * Process the inputs from the file, collect the responses, and write them to the corresponding output file.
+     *
+     * @param fileNamePath path of the input file
+     */
     public void processFile(String fileNamePath) {
         logger.info("Started processing inputs for Gator Ticket Master.");
 
@@ -37,6 +43,7 @@ public class FileIOProcessor {
         logger.info("Completed processing tickets.");
     }
 
+    // Read file from the file path and process accordingly.
     private List<String> readFile(String fileNamePath) {
         logger.info("Reading from input file: " + fileNamePath);
 
@@ -59,6 +66,7 @@ public class FileIOProcessor {
         return responses;
     }
 
+    // Write the responses collected to the output file.
     private void writeFile(String fileNamePath, List<String> responses) {
         String[] fileDetails = fileNamePath.split("\\.", 2);
         String outputFileNamePath = fileDetails[0] + "_output_file." + fileDetails[1];
@@ -73,6 +81,7 @@ public class FileIOProcessor {
         }
     }
 
+    // Process line as per the matched regex.
     private List<String> processLine(String line) {
         List<String> responseStrings = new ArrayList<>();
 
@@ -104,7 +113,7 @@ public class FileIOProcessor {
                 int userId = Integer.parseInt(matcher.group(1));
                 responseStrings.add(inputActionsHandler.exitWaitlist(userId));
             }
-        } else if (line.matches(UPDATE_PRIORITY_REGEX)){
+        } else if (line.matches(UPDATE_PRIORITY_REGEX)) {
             Matcher matcher = this.getMatcher(UPDATE_PRIORITY_REGEX, line);
             if (matcher.find()) {
                 int userId = Integer.parseInt(matcher.group(1));
@@ -119,11 +128,19 @@ public class FileIOProcessor {
             }
         } else if (line.matches(PRINT_RESERVATIONS_REGEX)) {
             responseStrings.addAll(inputActionsHandler.printReservations());
+        } else if (line.matches(RELEASE_SEATS_REGEX)) {
+            Matcher matcher = this.getMatcher(RELEASE_SEATS_REGEX, line);
+            if (matcher.find()) {
+                int userId1 = Integer.parseInt(matcher.group(1));
+                int userId2 = Integer.parseInt(matcher.group(2));
+                responseStrings.addAll(inputActionsHandler.releaseSeats(userId1, userId2));
+            }
         }
 
         return responseStrings;
     }
 
+    // Returns a Matcher object for the given regex and text.
     private Matcher getMatcher(String regex, String text) {
         Pattern pattern = Pattern.compile(regex);
         return pattern.matcher(text);

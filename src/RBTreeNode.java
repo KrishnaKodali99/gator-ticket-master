@@ -1,18 +1,13 @@
+/**
+ * Represents a node in a Red-Black Tree (RBTree) to support the Red-Black Tree's balancing properties.
+ * Each node has a key-value pair, a parent node, left and right children, and a color (RED or BLACK).
+ */
 public class RBTreeNode {
-    public enum NodeColor {
-        RED, BLACK
-    }
-
     private Integer key;
-
     private Integer value;
-
     private RBTreeNode parent;
-
     private RBTreeNode leftChild;
-
     private RBTreeNode rightChild;
-
     private NodeColor nodeColor;
 
     public RBTreeNode() {
@@ -90,5 +85,9 @@ public class RBTreeNode {
         this.leftChild = null;
         this.rightChild = null;
         this.nodeColor = null;
+    }
+
+    public enum NodeColor {
+        RED, BLACK
     }
 }

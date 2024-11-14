@@ -1,5 +1,6 @@
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 
 public class BinaryMinHeap<K extends Comparable<K>> {
     private final K[] heapArray;
@@ -51,7 +52,19 @@ public class BinaryMinHeap<K extends Comparable<K>> {
         return minValue;
     }
 
+    /**
+     * Removes the specified element from the BinaryHeap using LinearSearch and heapify to maintain the Min-Heap property.
+     *
+     * @param element to search for within the heap.
+     * @return the removed element
+     */
     public K removeElement(K element) {
+        assert Objects.nonNull(element) : "element should not be null";
+
+        if (this.currentSize == 0) {
+            return null;
+        }
+
         K removedElement;
         if (element.equals(this.heapArray[0])) {
             return this.extractMin();
@@ -102,7 +115,7 @@ public class BinaryMinHeap<K extends Comparable<K>> {
     /**
      * Updates the element at the specified index in the collection.
      *
-     * @param index of the element to update in the collection.
+     * @param index   of the element to update in the collection.
      * @param element to assign at the specified index.
      */
     public void updateElement(Integer index, K element) {
@@ -143,6 +156,7 @@ public class BinaryMinHeap<K extends Comparable<K>> {
         return this.currentSize == 0;
     }
 
+    // Moves the element at the specified index up to its correct position in the heap
     private void heapifyUp(int index) {
         int heapifyIndex = index;
         int parentIndex = (index - 1) / 2;
@@ -162,15 +176,16 @@ public class BinaryMinHeap<K extends Comparable<K>> {
         this.heapifyUp(heapifyIndex);
     }
 
+    // Moves the element at the specified index down to its correct position in the heap
     private void heapifyDown(int index) {
         int heapifyIndex = index;
         int leftChildIndex = (2 * index) + 1;
         int rightChildIndex = (2 * index) + 2;
 
-        if (leftChildIndex <= this.currentSize && this.heapArray[leftChildIndex].compareTo(this.heapArray[heapifyIndex]) <= 0) {
+        if (leftChildIndex < this.currentSize && this.heapArray[leftChildIndex].compareTo(this.heapArray[heapifyIndex]) <= 0) {
             heapifyIndex = leftChildIndex;
         }
-        if (rightChildIndex <= this.currentSize && this.heapArray[rightChildIndex].compareTo(this.heapArray[heapifyIndex]) <= 0) {
+        if (rightChildIndex < this.currentSize && this.heapArray[rightChildIndex].compareTo(this.heapArray[heapifyIndex]) <= 0) {
             heapifyIndex = rightChildIndex;
         }
         if (heapifyIndex == index) {
@@ -180,6 +195,7 @@ public class BinaryMinHeap<K extends Comparable<K>> {
         heapifyDown(heapifyIndex);
     }
 
+    // Swaps the elements at the specified indices within the heap array.
     private void swapElements(int index1, int index2) {
         K temp = this.heapArray[index1];
         this.heapArray[index1] = this.heapArray[index2];
