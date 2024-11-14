@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -69,7 +70,7 @@ public class FileIOProcessor {
     // Write the responses collected to the output file.
     private void writeFile(String fileNamePath, List<String> responses) {
         String[] fileDetails = fileNamePath.split("\\.", 2);
-        String outputFileNamePath = fileDetails[0] + "_output_file." + fileDetails[1];
+        String outputFileNamePath = fileDetails[0] + "_output_file." + ((Objects.isNull(fileDetails[1])) ? ".txt" : fileDetails[1]);
 
         logger.info("Writing responses into output file: " + outputFileNamePath);
 

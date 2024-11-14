@@ -6,12 +6,14 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class InputActionsHandler {
-    private static final Integer WAITLIST_SIZE = 10000;
+    private static final Integer WAITLIST_SIZE = 100000;
     private static final String INVALID_INPUT = "Invalid input. Please provide a valid number of seats.";
 
     private final BinaryMinHeap<Integer> availableSeatsList;
     private final BinaryMinHeap<User> usersWaitList;
     private final RBTreeMap userReservationMap;
+    private final Logger logger;
+
     private int availableSeats;
 
     public InputActionsHandler() {
@@ -19,6 +21,7 @@ public class InputActionsHandler {
         this.usersWaitList = new BinaryMinHeap<>(WAITLIST_SIZE);
         this.availableSeatsList = new BinaryMinHeap<>(WAITLIST_SIZE);
         this.userReservationMap = new RBTreeMap();
+        logger = new Logger();
     }
 
     /**
@@ -28,14 +31,19 @@ public class InputActionsHandler {
      * @return response
      */
     public String initialize(int seatCount) {
-        if (seatCount < 0 || seatCount > WAITLIST_SIZE) {
+        try {
+            if (seatCount < 0 || seatCount > WAITLIST_SIZE) {
+                return INVALID_INPUT;
+            }
+            for (int seatNumber = 1; seatNumber <= seatCount; seatNumber++) {
+                this.availableSeatsList.insert(seatNumber);
+            }
+            this.availableSeats += seatCount;
+            return String.format("%d Seats are made available for reservation", seatCount);
+        } catch (RuntimeException exception) {
+            logger.error("Exception when initializing: " + exception);
             return INVALID_INPUT;
         }
-        for (int seatNumber = 1; seatNumber <= seatCount; seatNumber++) {
-            this.availableSeatsList.insert(seatNumber);
-        }
-        this.availableSeats += seatCount;
-        return String.format("%d Seats are made available for reservation", seatCount);
     }
 
     /**

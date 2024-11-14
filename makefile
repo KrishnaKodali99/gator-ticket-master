@@ -1,34 +1,27 @@
-# Java Compiler
-JAVAC = javac
-JAR = jar
-JAVA = java
+# Makefile for compiling Java files from src to the current directory
 
-# Folders
-SRC = src
-BIN = bin
-JAR_FILE = gatorTicketMaster.jar
+# Variables
+SRC_DIR = src
+OUT_DIR = out
 MAIN_CLASS = GatorTicketMaster
 
-# Default target: compile and create .jar
-all: jar
+# Target to compile all Java files
+build:
+	javac -d $(OUT_DIR) $(SRC_DIR)/*.java
 
-# Target to compile all .java files in src and output to bin directory
-$(BIN)/%.class: $(SRC)/%.java
-	@mkdir -p $(BIN)
-	$(JAVAC) -d $(BIN) $(SRC)/*.java
+# Target to run the Java program with the specified text file
+run: build
+	@if [ -z "$(file)" ]; then \
+		echo "Error: No file name specified. Halting execution."; \
+		exit 1; \
+	else \
+		echo "Running with file name: $(file)"; \
+		java -cp $(OUT_DIR) $(MAIN_CLASS) $(file); \
+	fi
 
-# Target to create the executable .jar file
-jar: $(BIN)/$(MAIN_CLASS).class
-	@echo "Main-Class: $(MAIN_CLASS)" > manifest.txt
-	$(JAR) cfm $(JAR_FILE) manifest.txt -C $(BIN) .
-	rm manifest.txt
-
-# Target to run the .jar file
-run-jar: jar
-	$(JAVA) -jar $(JAR_FILE)
-
-# Clean up compiled .class files and .jar file
+# Target to clean up compiled files
 clean:
-	rm -rf $(BIN)/*.class $(JAR_FILE)
+	rm -rf $(OUT_DIR)
 
-.PHONY: all jar run-jar clean
+# Default target (compile Java files)
+all: build

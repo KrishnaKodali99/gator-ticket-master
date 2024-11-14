@@ -25,13 +25,25 @@
 Use the following command to compile and run the project JAR file:
 ```bash
 cd gator-ticket-master
+
 make
-java -jar gatorTicketMaster.jar file_name
+
+# Execution using make (specify the file path for input)
+make run file=<file_path>
+
+# Execution using Java (navigate to the output directory and run the program)
+cd out
+java GatorTicketMaster <file_name>
+
+# Clean all the generated output files
+make clean
 ```
 
 ### Prerequisites
 
-Ensure you have Java version **11.0.24** installed on your system.
+This project can be compiled with any Java version after 11. During development Java **11.0.24** was used for run time.
+
+
 
 
 ## Input/Output Requirements
@@ -78,5 +90,4 @@ Seat 1, User 3
 Seat 2, User 2
 Program Terminated!!
 ```
-
 ---
