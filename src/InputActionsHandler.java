@@ -112,7 +112,6 @@ public class InputActionsHandler {
         if (Objects.nonNull(this.usersWaitList.removeElement(new User(userId)))) {
             return String.format("User %d is removed from the waiting list", userId);
         }
-
         return String.format("User %d is not in waitlist", userId);
     }
 
@@ -172,7 +171,10 @@ public class InputActionsHandler {
      */
     public List<String> printReservations() {
         Set<Map.Entry<Integer, Integer>> reservationDetailsSet = this.userReservationMap.entrySet();
-        return reservationDetailsSet.stream().sorted(Map.Entry.comparingByValue()).map(setEntry -> String.format("Seat %d, User %d", setEntry.getValue(), setEntry.getKey())).collect(Collectors.toList());
+        return reservationDetailsSet.stream()
+                .sorted(Map.Entry.comparingByValue())
+                .map(setEntry -> String.format("Seat %d, User %d", setEntry.getValue(), setEntry.getKey()))
+                .collect(Collectors.toList());
     }
 
     /**
@@ -205,7 +207,6 @@ public class InputActionsHandler {
                 while (!this.usersWaitList.isEmpty() && !this.availableSeatsList.isEmpty()) {
                     User user = this.usersWaitList.extractMin();
                     Integer seatId = this.availableSeatsList.extractMin();
-
                     if (Objects.nonNull(seatId)) {
                         this.userReservationMap.put(user.getUserId(), seatId);
                         responses.add(String.format("User %d reserved seat %d", user.getUserId(), seatId));

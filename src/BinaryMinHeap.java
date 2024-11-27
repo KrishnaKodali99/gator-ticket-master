@@ -164,12 +164,10 @@ public class BinaryMinHeap<K extends Comparable<K>> {
         if (parentIndex < 0) {
             return;
         }
-
         if (this.heapArray[parentIndex].compareTo(this.heapArray[heapifyIndex]) > 0) {
             this.swapElements(parentIndex, heapifyIndex);
             heapifyIndex = parentIndex;
         }
-
         if (heapifyIndex == index) {
             return;
         }
