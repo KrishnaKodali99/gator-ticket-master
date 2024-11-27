@@ -1,5 +1,5 @@
 # Gator Ticket Master
-### COP 5536 Fall 2024 - Programming Project
+### COP 5536 Fall 2024 - ADS Programming Project
 
 ## Project Overview
 
