@@ -167,7 +167,7 @@ public class RBTreeMap implements Map<Integer, Integer> {
         return searchValue(treeNode.getRightChild(), value);
     }
 
-    // Inserts a key-value pair into the Red-Black Tree and balances the tree based on the type of insetion through rotations and recoloring.
+    // Inserts a key-value pair into the Red-Black Tree and balances the tree based on the type of insertion through rotations and recoloring.
     private void insertKVPair(Integer key, Integer value, RBTreeNode treeNode) {
         // If the node is null, initialize it as the root node.
         if (Objects.isNull(treeNode)) {
